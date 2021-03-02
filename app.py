@@ -50,6 +50,26 @@ def add_new_record():
             con.close()
             return jsonify(msg)
 
+@app.route('/login/', methods=["POST"])
+def login():
+
+    msg = None
+    try:
+        post_data = request.get_json()
+        username=post_data['username']
+        password=post_data['password']
+        with sqlite3.connect('database.db') as con:
+            cur = con.cursor()
+            sql = ("SELECT * FROM admin WHERE username = ? and password = ?")
+            cur.execute(sql,[username, password])
+            records=cur.fetchall()
+
+    except Exception as e:
+        con.rollback()
+        msg = "Error occurred when fetching results from the database: " + str(e)
+    finally:
+        con.close()
+        return jsonify(msg)
 
 @app.route('/show-records/', methods=["GET"])
 def show_records():
@@ -84,6 +104,9 @@ def delete_student(student_id):
     finally:
         con.close()
         return jsonify(delete_student)
+
+
+
 
 
 if __name__=="__main__":
