@@ -1,113 +1,165 @@
 import sqlite3
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, request, render_template
 from flask_cors import CORS
+
+
+def init_sqlite_db():
+    conn = sqlite3.connect('database.db')
+    print("Database opened successfully")
+
+    conn.execute('CREATE TABLE IF NOT EXISTS register_table(''registerid INTEGER PRIMARY KEY AUTOINCREMENT,'
+                 'fullname TEXT,'
+                 'usernameTEXT,'
+                 'email TEXT,'
+                 'password TEXT,')
+    print("register_table created successfully")
+
+    conn.execute('CREATE TABLE IF NOT EXISTS user_table('
+                 'userid INTEGER PRIMARY KEY AUTOINCREMENT,'
+                 'username TEXT, '
+                 'password TEXT,')
+    print("user_table created successfully")
+
+
+
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM register_table")
+
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM user_table")
+
+    print(cursor.fetchall())
+
+init_sqlite_db()
+
+app = Flask(__name__)
+CORS(app)
+
 
 def dict_factory(cursor, row):
     d = {}
     for idx, col in enumerate(cursor.description):
         d[col[0]] = row[idx]
-        return d
+    return d
 
 
-def init_sqlite_db():
-
-    con = sqlite3.connect('database.db')
-    print("Opened database successfully")
-
-    con.execute('CREATE TABLE IF NOT EXISTS student (id INTEGER PRIMARY KEY AUTOINCREMENT, product_name TEXT, price TEXT, brand TEXT, picture BLOB)')
-    print("Item table created successfully")
-    con.close()
+@app.route('/register/')
+def register_test():
+    return render_template('register_text.html')
 
 
-init_sqlite_db()
-
-
-app = Flask(__name__)
-CORS(app)
-
-@app.route('/')
-@app.route('/add-new-record/', methods=['POST'])
-def add_new_record():
-    if request.method == "POST":
+@app.route('/register-user/', methods=["POST"])
+def register_user():
+    if request.method == 'POST':
         msg = None
         try:
             post_data = request.get_json()
-            product_name = post_data['product_name']
-            price = post_data['price']
-            brand = post_data['brand']
-            picture = post_data['picture']
-            with sqlite3.connect('database.db') as con:
-                cur = con.cursor()
-                cur.execute("INSERT INTO items (product_name, price, brand, picture) VALUES (?, ? , ? ,?)" , (product_name, price, brand, picture))
-                con.commit()
-                msg = product_name + " was successfully added to the database."
+            fullname = post_data['fullname']
+            username = post_data['Username']
+            email = post_data['email']
+            password = post_data['Password']
+            with sqlite3.connect('database.db') as conn:
+
+                conn.row_factory = dict_factory
+
+                cur = conn.cursor()
+                cur.execute("INSERT INTO user_table(fullname, username, email, password)VALUES "
+                            "(?, ?, ?, ?)", (fullname, username, email, password))
+                conn.commit()
+                msg = "user added succesfully."
 
         except Exception as e:
-            con.rollback()
-            msg = "Error occurred in insert operation: " + str(e)
+            return {'error': str(e)}
+        finally:
+            conn.close()
+            return {'msg': msg}
+
+@app.route('/test/')
+def test():
+    return render_template('test.html')
+
+@app.route('/login-user/' , methods=["GET"])
+def login_user():
+    if request.method == 'GET':
+        response = {}
+        response['msg'] = None
+        response['body'] = []
+
+        try:
+            # get_data = request.get_json()
+            # username = get_data['username']
+            # password = get_data['password']
+
+            with sqlite3.connect('database.db') as conn:
+                conn.row_factory = dict_factory
+                cur = conn.cursor()
+                sql_stmnt = ('SELECT * FROM owner_table')
+                cur.execute(sql_stmnt)
+                admins = cur.fetchall()
+                conn.commit()
+                response['body'] = admins
+                response['msg'] = "user logged in succesfully."
+
+        except Exception as e:
+            conn.rollback()
+            response['msg'] = "Something went wrong while verifying a record: " + str(e)
 
         finally:
-            con.close()
-            return jsonify(msg)
+            return response
 
-@app.route('/login/', methods=["POST"])
-def login():
+@app.route('/create-blog/', methods=["POST"])
+def create_blog():
+    if request.method == 'POST':
+        msg = None
+        try:
+            post_data = request.get_json()
+            dog_name = post_data['dogname']
+            dog_type = post_data['dogtype']
+            dog_age = post_data['dogage']
+            dog_weight = post_data['weight']
+            image_url = post_data['imageurl']
+            description = post_data['description']
+            with sqlite3.connect('database.db') as conn:
 
-    msg = None
-    try:
-        post_data = request.get_json()
-        username=post_data['username']
-        password=post_data['password']
-        with sqlite3.connect('database.db') as con:
-            cur = con.cursor()
-            sql = ("SELECT * FROM admin WHERE username = ? and password = ?")
-            cur.execute(sql,[username, password])
-            records=cur.fetchall()
+                conn.row_factory = dict_factory
 
-    except Exception as e:
-        con.rollback()
-        msg = "Error occurred when fetching results from the database: " + str(e)
-    finally:
-        con.close()
-        return jsonify(msg)
+                cur = conn.cursor()
+                cur.execute("INSERT INTO dog_table(dogname, dogtype, dogage, weight , imageurl, description)VALUES "
+                            "(?, ?, ?, ?, ?, ?)", (dog_name, dog_type, dog_age, dog_weight, image_url[12:], description))
+                conn.commit()
+                msg = "blog added succesfully."
 
-@app.route('/show-records/', methods=["GET"])
-def show_records():
-    records = []
-    try:
-        with sqlite3.connect('database.db') as con:
-            con.row_factory = dict_factory()
-            cur = con.cursor()
-            cur.execute("SELECT * FROM users")
-            records = cur.fetchall()
-    except Exception as e:
-        con.rollback()
-        print("There was an error fetching results from the database. ")
-    finally:
-        con.close()
-        return jsonify(records)
+        except Exception as e:
+            return {'error': str(e)}
+        finally:
+            conn.close()
+            return {'msg': msg}
 
+@app.route('/display-content/' , methods=["GET"])
+def display_rec():
+    if request.method == 'GET':
+        response = {}
+        response['msg'] = None
+        response['body'] = []
 
-@app.route('/delete-student/<int:student_id>/', methods=["GET"])
-def delete_student(student_id):
+        try:
+            # get_data = request.get_json()
+            # username = get_data['username']
+            # password = get_data['password']
 
-    msg = None
-    try:
-        with sqlite3.connect('database.db') as con:
-            cur = con.cursor()
-            cur.execute("DELETE FROM student WHERE id=" + str(student_id))
-            con.commit()
-            msg = "A record was deleted successfully from the database."
-    except Exception as e:
-        con.rollback()
-        msg = "Error occurred when deleting a student in the database: " + str(e)
-    finally:
-        con.close()
-        return jsonify(delete_student)
+            with sqlite3.connect('database.db') as conn:
+                conn.row_factory = dict_factory
+                cur = conn.cursor()
+                sql_stmnt = ('SELECT * FROM dog_table')
+                cur.execute(sql_stmnt)
+                admins = cur.fetchall()
+                conn.commit()
+                response['body'] = admins
+                response['msg'] = "records on display"
 
+        except Exception as e:
+            conn.rollback()
+            response['msg'] = "Something went wrong while displaying a record: " + str(e)
 
-
-
-
-if __name__=="__main__":
-    app.run()
+        finally:
+            return response
