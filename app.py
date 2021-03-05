@@ -39,12 +39,43 @@ def register():
                         "(?, ?, ?, ?)",(fullname, username, email, password))
             print(cur)
             con.commit()
-            message = "Registered"
+            message = "You have successfully registered"
     except Exception as e:
         print(e)
     finally:
         con.close()
         return {'message':message}
+
+@app.route('/login_user/' , methods=["POST"])
+def login():
+    if request.method == 'POST':
+        response = {}
+        response['msg'] = None
+        response['body'] = []
+
+        try:
+            POST = request.get_json()
+            get_data = request.get_json()
+            username = get_data['username']
+            password = get_data['password']
+
+            with sqlite3.connect('HN.db') as conn:
+                conn.row_factory = dict_factory
+                cur = conn.cursor()
+                sql_stmnt = ('SELECT * FROM users')
+                cur.execute(sql_stmnt)
+                admins = cur.fetchall()
+                conn.commit()
+                response['body'] = admins
+                response['msg'] = "user logged in succesfully."
+
+        except Exception as e:
+            conn.rollback()
+            response['msg'] = "Something went wrong while verifying a record: " + str(e)
+
+        finally:
+            return response
+
 
 @app.route('/show-records/' , methods=["GET"])
 def records():
