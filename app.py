@@ -48,15 +48,9 @@ def register():
 
 @app.route('/show-records/' , methods=["GET"])
 def records():
-    if request.method == 'GET':
-        response = {}
-        response['msg'] = None
-        response['body'] = []
+    admins = []
 
-        try:
-            # get_data = request.get_json()
-            # username = get_data['username']
-            # password = get_data['password']
+    try:
 
             with sqlite3.connect('HN.db') as conn:
                 conn.row_factory = dict_factory
@@ -64,14 +58,16 @@ def records():
                 sql_stmnt = ('SELECT * FROM users')
                 cur.execute(sql_stmnt)
                 admins = cur.fetchall()
-                conn.commit()
-                response['body'] = admins
-                response['msg'] = "records on display"
 
-        except Exception as e:
-            conn.rollback()
-            response['msg'] = "Something went wrong while displaying a record: " + str(e)
+    except Exception as e:
+        conn.rollback()
+        print("Something went wrong while displaying a record: " + str(e))
 
-        finally:
-            return jsonify(records)
+    finally:
+        conn.close()
+        return jsonify(admins)
+
+if __name__=="__main__":
+    app.run()
+
 
