@@ -15,6 +15,21 @@ def create_user():
 
 create_user()
 
+def create_product():
+    connected = sqlite3.connect('HN.db')
+    print("created database")
+    connected.execute('CREATE TABLE IF NOT EXISTS products('
+                      'products,'
+                      'price,'
+                      'description,'
+                      'image)'
+                      )
+    print("products table created")
+
+create_product()
+
+
+
 app = Flask(__name__)
 CORS(app)
 
@@ -97,6 +112,30 @@ def records():
     finally:
         conn.close()
         return jsonify(admins)
+
+
+@app.route('/products/', methods=["POST"])
+def products():
+    try:
+        post = request.get_json()
+        products = post['products']
+        price = post['price']
+        description = post['description']
+        image = post['image']
+
+        with sqlite3.connect('HN.db') as con:
+            cur = con.cursor()
+            cur.execute("INSERT INTO users(products, price, description, image)VALUES"
+                        "(?, ?, ?, ?)",(products, price, description, image))
+            print(cur)
+            con.commit()
+            message = "You have successfully entered a product"
+    except Exception as e:
+        print(e)
+    finally:
+        con.close()
+        return {'message':message}
+
 
 if __name__=="__main__":
     app.run()
