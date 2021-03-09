@@ -118,14 +118,13 @@ def records():
 def products():
     try:
         post = request.get_json()
-        products = post['products']
+        products = post['product']
         price = post['price']
         description = post['description']
         image = post['image']
-
         with sqlite3.connect('HN.db') as con:
             cur = con.cursor()
-            cur.execute("INSERT INTO users(products, price, description, image)VALUES"
+            cur.execute("INSERT INTO products(products, price, description, image)VALUES"
                         "(?, ?, ?, ?)",(products, price, description, image))
             print(cur)
             con.commit()
