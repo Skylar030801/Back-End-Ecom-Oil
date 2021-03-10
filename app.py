@@ -136,6 +136,28 @@ def products():
         return {'message':message}
 
 
+@app.route('/show-products/' , methods=["GET"])
+def records():
+    admins = []
+
+    try:
+
+            with sqlite3.connect('HN.db') as conn:
+                conn.row_factory = dict_factory
+                cur = conn.cursor()
+                sql_stmnt = ('SELECT * FROM products')
+                cur.execute(sql_stmnt)
+                admins = cur.fetchall()
+
+    except Exception as e:
+        conn.rollback()
+        print("Something went wrong while displaying a record: " + str(e))
+
+    finally:
+        conn.close()
+        return jsonify(admins)
+
+
 if __name__=="__main__":
     app.run()
 
