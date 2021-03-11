@@ -5,11 +5,12 @@ from flask_cors import CORS
 def create_user():
     connected = sqlite3.connect('HN.db')
     print("created database")
-    connected.execute('CREATE TABLE IF NOT EXISTS users('
-                      'fullname,'
-                      'username,'
-                      'email,'
-                      'password)'
+    connected.execute('CREATE TABLE IF NOT EXISTS users(' 
+                      'id INTEGER PRIMARY KEY AUTOINCREMENT,'
+                      'fullname TEXT,'
+                      'username TEXT,'
+                      'email TEXT,'
+                      'password TEXT)'
                       )
     print("user table created")
 
@@ -19,10 +20,11 @@ def create_product():
     connected = sqlite3.connect('HN.db')
     print("created database")
     connected.execute('CREATE TABLE IF NOT EXISTS products('
-                      'products,'
-                      'price,'
-                      'description,'
-                      'image)'
+                      'id INTEGER PRIMARY KEY AUTOINCREMENT,'
+                      'products TEXT,'
+                      'price TEXT,'
+                      'description TEXT,'
+                      'image TEXT)'
                       )
     print("products table created")
 
@@ -39,7 +41,7 @@ def dict_factory(cursor, row):
         d[col[0]] = row[idx]
     return d
 
-@app.route('/user-register/', methods=["POST"])
+@app.route('/user-register/<int:register_id>', methods=["POST"])
 def register():
     try:
         post = request.get_json()
@@ -61,8 +63,8 @@ def register():
         con.close()
         return {'message':message}
 
-@app.route('/login_user/' , methods=["POST"])
-def login():
+@app.route('/login_user/<int:login_id>/' , methods=["POST"])
+def login(login_id):
     if request.method == 'POST':
         response = {}
         response['msg'] = None
@@ -77,7 +79,7 @@ def login():
             with sqlite3.connect('HN.db') as conn:
                 conn.row_factory = dict_factory
                 cur = conn.cursor()
-                sql_stmnt = ('SELECT * FROM users')
+                sql_stmnt = ('SELECT * FROM users WHERE id=' + str(login_id))
                 cur.execute(sql_stmnt)
                 admins = cur.fetchall()
                 conn.commit()
@@ -95,7 +97,6 @@ def login():
 @app.route('/show-records/' , methods=["GET"])
 def records():
     admins = []
-
     try:
 
             with sqlite3.connect('HN.db') as conn:
@@ -124,7 +125,7 @@ def products():
         image = post['image']
         with sqlite3.connect('HN.db') as con:
             cur = con.cursor()
-            cur.execute("INSERT INTO products(products, price, description, image)VALUES"
+            cur.execute("INSERT INTO products (products, price, description, image) VALUES"
                         "(?, ?, ?, ?)",(products, price, description, image))
             print(cur)
             con.commit()
@@ -137,7 +138,7 @@ def products():
 
 
 @app.route('/show-products/' , methods=["GET"])
-def records():
+def showprods():
     admins = []
 
     try:
@@ -156,6 +157,28 @@ def records():
     finally:
         conn.close()
         return jsonify(admins)
+
+
+@app.route('/show-product/<int:product_id>/', methods=["GET"])
+def show_single_product(product_id):
+    product = []
+
+    try:
+
+            with sqlite3.connect('HN.db') as conn:
+                conn.row_factory = dict_factory
+                cur = conn.cursor()
+                sql_stmnt = ('SELECT * FROM products WHERE id=' + str(product_id))
+                cur.execute(sql_stmnt)
+                product = cur.fetchone()
+
+    except Exception as e:
+        conn.rollback()
+        print("Something went wrong while displaying a record: " + str(e))
+
+    finally:
+        conn.close()
+        return jsonify(product)
 
 
 if __name__=="__main__":
