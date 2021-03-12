@@ -41,29 +41,31 @@ def dict_factory(cursor, row):
         d[col[0]] = row[idx]
     return d
 
-@app.route('/user-register/<int:register_id>', methods=["POST"])
+@app.route('/')
+@app.route('/user-register/', methods=["POST"])
 def register():
+    if request.method == "POST":
+        msg = None
     try:
         post = request.get_json()
         fullname = post['fullname']
         username = post['username']
         email = post['email']
-        password = post['password']
+        pin = post['pin']
 
         with sqlite3.connect('HN.db') as con:
             cur = con.cursor()
-            cur.execute("INSERT INTO users(fullname, username, email, password)VALUES"
-                        "(?, ?, ?, ?)",(fullname, username, email, password))
+            cur.execute("INSERT INTO users (fullname, username, email, password) VALUES"
+                        "(?, ?, ?, ?)",(fullname, username, email, pin))
             print(cur)
             con.commit()
-            message = "You have successfully registered"
+            msg = "You have successfully registered"
     except Exception as e:
         print(e)
     finally:
-        con.close()
-        return {'message':message}
+        return jsonify(msg = msg)
 
-@app.route('/login_user/<int:login_id>/' , methods=["POST"])
+@app.route('/login_user/<int:login_id>/', methods=["POST"])
 def login(login_id):
     if request.method == 'POST':
         response = {}
@@ -111,7 +113,6 @@ def records():
         print("Something went wrong while displaying a record: " + str(e))
 
     finally:
-        conn.close()
         return jsonify(admins)
 
 
@@ -155,7 +156,6 @@ def showprods():
         print("Something went wrong while displaying a record: " + str(e))
 
     finally:
-        conn.close()
         return jsonify(admins)
 
 
@@ -177,7 +177,6 @@ def show_single_product(product_id):
         print("Something went wrong while displaying a record: " + str(e))
 
     finally:
-        conn.close()
         return jsonify(product)
 
 
